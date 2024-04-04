@@ -17,8 +17,6 @@ const getCourse= `SELECT * FROM Courses`;
 
 const getCourseById = `SELECT * FROM Courses WHERE course_id = $1`;
 
-const updateCourse =` UPDATE Courses SET title = $2, description = $3, category = $4, level = $5, price = $6, duration = $7, instructor = $8
-                     WHERE course_id = $1`;
 
 const deleteCourse = `DELETE FROM Courses WHERE course_id = $1`;
 
@@ -27,6 +25,5 @@ module.exports = {
     addCourse,
     getCourse,
     getCourseById,
-    updateCourse,
     deleteCourse
 }

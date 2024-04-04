@@ -1,15 +1,18 @@
 const bcrypt = require("bcrypt");
 const pool = require('../Database/connection'); // Assuming this imports the PostgreSQL connection pool
 const queries = require('../Database/queries/userQuery'); // Assuming this imports the SQL queries for database operations
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
 
 // User Registration API endpoint
 const userRegister = async (req, res) => {
     try {
         // Extract user data from request body
-        const { user_id, name, email, password, profile_picture_url, bio, website} = req.body;
+        const { user_id, name, email, password,superadmin , profile_picture_url, bio, website} = req.body;
 
         // Check if all required fields are provided
-        if (!(user_id && name && email && password && profile_picture_url && bio && website)) {
+        if (!(user_id && name && email && password && superadmin &&profile_picture_url && bio && website)) {
             return res.status(400).send('All fields are required');
         }
 
@@ -22,11 +25,13 @@ const userRegister = async (req, res) => {
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const token = jwt.sign({email: email}, process.env.JWT_SCERET,{ expiresIn: '2h'});
+
         // Execute the SQL query to add a new user to the database
-        const data = await pool.query(queries.addUser, [user_id ,name, email, hashedPassword, profile_picture_url, bio, website]);
+        const data = await pool.query(queries.addUser, [user_id ,name, email, hashedPassword, profile_picture_url, bio, website, superadmin]);
 
         // Respond with success message
-        res.status(201).send(`Student created successfully: ${data}` );
+        res.status(201).json({ success: true, token});
     } catch (err) {
         console.log(err);
         // If an error occurs, respond with an internal server error message
@@ -168,7 +173,26 @@ const deleteUser = async ( req, res ) =>{
         return res.status(500).send('Internal server error');
     }
 }
+//get Superadmin
+const getSuperadmin = async (req, res) => {
+    try {
+        const {user_id} = req.params;
+        if(!user_id){
+            return res.status(400).send('User Id is required');
+        }
 
+        const data = await pool.query(queries.getUserById, [user_id]);
+ 
+        if(data.rows.length === 0){
+            return res.status(400).send('User not found')
+        }
+
+        res.status(200).json(data.rows);
+    } catch (err) {
+        console.error('Error accessing superadmin dashboard:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
 
 
@@ -178,5 +202,6 @@ module.exports = {
     getUsers,
     getUserById,
     updateUser,
-    deleteUser
+    deleteUser,
+    getSuperadmin
 };

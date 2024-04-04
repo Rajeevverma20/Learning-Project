@@ -141,9 +141,39 @@ const updateCourse = async (req, res) => {
 }
 
 
+// Delete Course By ID
+
+const deleteCourse = async( req, res ) =>{
+
+    try{
+
+        const { course_id } = req.params;
+
+        if(!course_id){
+            return res.status(400).send('Course Id is required');
+        }
+
+        const checkCourse = await pool.query(queries.getCourseById, [course_id]);
+        if(checkCourse.rows.lengt === 0){
+            return res.status(400).send('Course Id not found')
+        }
+
+        const data = await pool.query(queries.deleteCourse, [course_id]);
+
+        res.status(200).send('Course Delete Successfully')
+
+
+    }catch(err){
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
+
 module.exports ={
     createCourse,
     getAllCourses,
     getCourseById,
-    updateCourse
+    updateCourse,
+    deleteCourse
 }
