@@ -10,7 +10,7 @@ route.post('/register',userController.userRegister);
 
 route.get('/users',userController.getUsers);
 
-route.get('/users/:user_id',authMiddleware, userController.getUserById);
+route.get('/Login', userController.userLogin);
 
 route.patch('/users/:user_id',authMiddleware, userController.updateUser);
 

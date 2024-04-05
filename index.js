@@ -2,12 +2,17 @@ const express = require('express');
 const userRoutes= require('./routes/userRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
+const fileUpload = require('express-fileupload')
 const app = express();
 const port = 8000;
 
 
 app.use(express.json());
 
+
+app.use(fileUpload({
+  useTempFiles: true
+}))
 app.get('/', (req, res) => {
     // Handle GET request to /learning route
     res.send('Welcome to the learning platform');
