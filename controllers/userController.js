@@ -2,8 +2,9 @@ const bcrypt = require("bcrypt");
 const pool = require('../Database/connection'); // Assuming this imports the PostgreSQL connection pool
 const queries = require('../Database/queries/userQuery'); // Assuming this imports the SQL queries for database operations
 const jwt = require('jsonwebtoken');
-//const {sendRegistrationConfirmationEmail}= require('../services/emailService');
-//const { uploadImageToCloudinary  } = require('../services/profileimage');
+const {sendRegistrationConfirmationEmail, sendPasswordResetEmail}= require('../utils/emailService');
+const { uploadImageToCloudinary  } = require('../utils/profileimage');
+const { getDataUri } = require("../utils/dataUri");
 require('dotenv').config();
 
 
@@ -18,7 +19,6 @@ const userRegister = async (req, res) => {
             return res.status(400).send('All fields are required');
         }
 
-       // const profile_picture_url = await uploadImageToCloudinary(profile_picture);
 
         
         // Check if the email is already in use
@@ -36,11 +36,14 @@ const userRegister = async (req, res) => {
 
         // Generate JWT token
         const token = jwt.sign({email: email}, process.env.JWT_SCERET,{ expiresIn: '2h'});
-
+       
 
         // Send registration confirmation email
-     //   await sendRegistrationConfirmationEmail(email);
+            const mailSent=   await sendRegistrationConfirmationEmail(email);
 
+            if(!mailSent){
+                return res.status(400).send('Mail not send')
+            }
         // Respond with success message
         res.status(201).json({ success: true, token});
     } catch (err) {
@@ -107,9 +110,13 @@ const updateUser = async( req, res ) => {
 
         const { user_id } = req.params;
 
-        console.log(user_id)
+        
+        const { name, email, password, bio, website } = req.body;
 
-        const { name, email, password,  profile_picture_url, bio, website } = req.body;
+        const file = req.file;
+        console.log(file)
+
+        let uploadedImageUrl;
 
         if(!user_id ){
             return res.status(400).send('User Id  required');
@@ -139,11 +146,19 @@ const updateUser = async( req, res ) => {
             const hashPassword = await bcrypt.hash(password, 10);
             updateFields.push('password = $'+ index++);
             values.push(hashPassword)
+
+            await sendPasswordResetEmail(email);
         }
-        if(profile_picture_url){
-            updateFields.push('profile_picture_url = $'+ index++);
-            values.push(profile_picture_url);
+        if (file) {
+            // Upload the image to Cloudinary
+            const dataUri = getDataUri(file)
+            uploadedImageUrl = await uploadImageToCloudinary(dataUri);
+            console.log(uploadedImageUrl);
+            // Add the Cloudinary URL to the updateFields array
+            updateFields.push('profile_picture_url = $' + index++);
+            values.push(uploadedImageUrl);
         }
+
         if(bio){
             updateFields.push('bio = $'+ index++);
             values.push(bio);
@@ -189,8 +204,7 @@ const deleteUser = async ( req, res ) =>{
 
         const data = await pool.query(queries.deleteUser,[user_id]);
 
-        res.status(204).send('User Delete Successfully :', data)
-
+        res.status(200).send('User Delete Successfully');
     }catch(err){
         console.log(err);
         return res.status(500).send('Internal server error');

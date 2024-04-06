@@ -1,8 +1,8 @@
 const express = require('express');
 const route= express.Router();
 const courseController = require('../controllers/courseController');
-const authMiddleware = require('../services/authService');
-const isSuperadmin = require('../services/Superadmin');
+const authMiddleware = require('../middleware/authService');
+const isSuperadmin = require('../middleware/Superadmin');
 
  route.post('/courses',authMiddleware, isSuperadmin, courseController.createCourse);
 

@@ -54,7 +54,7 @@ const getCourseById = async ( req, res ) =>{
         const data = await pool.query(queries.getCourseById, [course_id]);
 
         if(data.rows.length === 0){
-            return res.status(404).send('Course nt found');
+            return res.status(404).send('Course not found');
         }
 
         res.status(200).send(data.rows[0])
