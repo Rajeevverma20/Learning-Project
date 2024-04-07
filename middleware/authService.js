@@ -1,7 +1,6 @@
-// middleware/auth.js
 const jwt = require('jsonwebtoken');
-const pool = require('../Database/connection'); // Assuming this imports the PostgreSQL connection pool
-const queries = require('../Database/queries/userQuery'); // Assuming this imports the SQL queries for database operations
+const pool = require('../Database/connection'); 
+const queries = require('../Database/queries/userQuery'); 
 require('dotenv').config();
 
 const authMiddleware = async (req, res, next) => {

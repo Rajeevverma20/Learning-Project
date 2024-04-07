@@ -1,22 +1,25 @@
 const bcrypt = require("bcrypt");
-const pool = require('../Database/connection'); // Assuming this imports the PostgreSQL connection pool
-const queries = require('../Database/queries/userQuery'); // Assuming this imports the SQL queries for database operations
+const pool = require('../Database/connection'); 
+const queries = require('../Database/queries/userQuery');
 const jwt = require('jsonwebtoken');
 const {sendRegistrationConfirmationEmail, sendPasswordResetEmail}= require('../utils/emailService');
 const { uploadImageToCloudinary  } = require('../utils/profileimage');
 const { getDataUri } = require("../utils/dataUri");
+const uuid = require('uuid');
 require('dotenv').config();
 
 
-// User Registration API endpoint
+// User Registration 
 const userRegister = async (req, res) => {
     try {
+
+        const user_id = uuid.v4();
         // Extract user data from request body
         const {  name, email, password,superadmin } = req.body;
 
         // Check if all required fields are provided
         if (!( name && email && password && superadmin )) {
-            return res.status(400).send('All fields are required');
+            return res.status(400).json({ error: 'All fields are required' });;
         }
 
 
@@ -24,7 +27,7 @@ const userRegister = async (req, res) => {
         // Check if the email is already in use
         const existingUser = await pool.query(queries.getUserByEmail, [email]);
         if (existingUser.rows.length > 0) {
-            return res.status(400).send('Email is already in use');
+            return res.status(400).json({ error: 'Email already in use' });;
         }
 
         // Hash the password
@@ -32,7 +35,7 @@ const userRegister = async (req, res) => {
 
         
         // Execute the SQL query to add a new user to the database
-        const data = await pool.query(queries.addUser, [name, email, hashedPassword, superadmin]);
+        const data = await pool.query(queries.addUser, [user_id, name, email, hashedPassword, superadmin]);
 
         // Generate JWT token
         const token = jwt.sign({email: email}, process.env.JWT_SCERET,{ expiresIn: '2h'});
@@ -42,32 +45,19 @@ const userRegister = async (req, res) => {
             const mailSent=   await sendRegistrationConfirmationEmail(email);
 
             if(!mailSent){
-                return res.status(400).send('Mail not send')
+                return res.status(400).json({ error: 'Mail not sent' });
             }
         // Respond with success message
         res.status(201).json({ success: true, token});
     } catch (err) {
         console.error('An error occurred while registering user:', err);
         // If an error occurs, respond with an internal server error message
-        res.status(500).send('Internal server error');
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 
-//Get All Users
-const getUsers = async( req, res)=>{
-    try{
 
-        const data = await pool.query(queries.getAllUsers);
-
-        res.status(200).send(data.rows);
-
-    }catch(err){
-        console.log(err);
-        res.status(500).send("Internal server error");
-    }
-}
-
-//Get User By Id
+//Login User
 const userLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -114,19 +104,18 @@ const updateUser = async( req, res ) => {
         const { name, email, password, bio, website } = req.body;
 
         const file = req.file;
-        console.log(file)
 
         let uploadedImageUrl;
 
         if(!user_id ){
-            return res.status(400).send('User Id  required');
+            return res.status(400).json({ error: 'User Id required' });
         }
 
         // Check if the user with the specified ID exists
 
         const checkUser = await pool.query(queries.getUserById, [user_id]);
         if(checkUser.rows.length === 0){
-            return res.status(404).send('User not found')
+            return res.status(404).json({ error: 'User not found' });
         }
 
         const updateFields = [];
@@ -179,7 +168,7 @@ const updateUser = async( req, res ) => {
 
     }catch(err){
         console.log(err);
-        res.status(500).send('Internal server error');
+        res.status(500).json({ error: 'Internal server error' });
     }
 }
 
@@ -191,14 +180,14 @@ const deleteUser = async ( req, res ) =>{
         const { user_id } = req.params;
         
         if(!user_id){
-            return res.status(400).send('User Id is required');
+            return res.status(400).json({ error: 'User Id is required' });
         }
 
         // Check if the user with the specified ID exists
 
         const checkUser = await pool.query(queries.getUserById, [user_id]);
         if(checkUser.rows.length === 0){
-            return res.status(404).send('User not found')
+            return res.status(404).json({ error: 'User not found' });
         }
 
 
@@ -207,21 +196,22 @@ const deleteUser = async ( req, res ) =>{
         res.status(200).send('User Delete Successfully');
     }catch(err){
         console.log(err);
-        return res.status(500).send('Internal server error');
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
+
 //get Superadmin
 const getSuperadmin = async (req, res) => {
     try {
         const {user_id} = req.params;
         if(!user_id){
-            return res.status(400).send('User Id is required');
+            return res.status(400).json({ error: 'User Id is required' });
         }
 
         const data = await pool.query(queries.getUserById, [user_id]);
  
         if(data.rows.length === 0){
-            return res.status(400).send('User not found')
+            return res.status(400).json({ error: 'User not found' });
         }
 
         res.status(200).json(data.rows);
@@ -236,7 +226,6 @@ const getSuperadmin = async (req, res) => {
 // Export the userRegister function to be used in other files
 module.exports = {
     userRegister,
-    getUsers,
     userLogin,
     updateUser,
     deleteUser,

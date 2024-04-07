@@ -1,7 +1,7 @@
 const { Resend } = require('resend');
 require('dotenv').config();
 
-// Initialize the Resend instance with your API key
+
 const resend = new Resend(process.env.EMAIL_API_KEY);
 
 // Send the email
@@ -48,7 +48,7 @@ const sendPasswordResetEmail = async (userEmail) => {
       text: `Successfully reset your password`,
     };
 
-    // Call sendEmail function with emailOptions
+    
     await sendEmail(emailOptions);
     return 'Password reset email sent successfully';
   } catch (error) {
@@ -66,7 +66,7 @@ const sendCourseEnrollmentNotification = async (userEmail, courseName) => {
       text: `You have been successfully enrolled in the course "${courseName}".`,
     };
 
-    // Call sendEmail function with emailOptions
+    
     await sendEmail(emailOptions);
     return 'Course enrollment notification email sent successfully';
   } catch (error) {
